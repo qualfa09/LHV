@@ -467,7 +467,7 @@ function App() {
         fileGeotagging
       };
 
-      const filename = await LHVLogic.generateAndDownload(state, (msg) => setStatus(msg));
+      const filename = await LHVLogic.generateAndDownload(state, (msg) => { console.log('[LHV]', msg); setStatus(msg); });
 
       // Simpan proyek ini ke IndexedDB (draft tersimpan, bisa dibuka lagi nanti)
       try {
@@ -484,7 +484,7 @@ function App() {
       localStorage.removeItem('draft_lhv_generator');
     } catch (err) {
       console.error(err);
-      setStatus('Error: ' + err.message);
+      setStatus('Error: ' + (err && err.message ? err.message : String(err)) + (err && err.stack ? ('\n\n' + err.stack.split('\n').slice(0,3).join('\n')) : ''));
     }
   }
 
@@ -528,7 +528,19 @@ function App() {
         <img src={logoBBS} alt="Logo BBSPJPPI" style={{ height: '70px', objectFit: 'contain' }} />
       </div>
 
-      <p style={{ textAlign: 'center', fontWeight: 'bold', color: '#e65100', minHeight: '20px' }}>{status}</p>
+      {status && (
+        <p style={{
+          textAlign: 'center',
+          fontWeight: 'bold',
+          padding: '12px 16px',
+          borderRadius: '6px',
+          margin: '0 0 15px 0',
+          backgroundColor: status.startsWith('Error') ? '#ffebee' : status.startsWith('Sukses') ? '#e8f5e9' : '#fff3e0',
+          color: status.startsWith('Error') ? '#c62828' : status.startsWith('Sukses') ? '#2e7d32' : '#e65100',
+          border: '1px solid ' + (status.startsWith('Error') ? '#ef9a9a' : status.startsWith('Sukses') ? '#a5d6a7' : '#ffcc80'),
+          whiteSpace: 'pre-wrap'
+        }}>{status}</p>
+      )}
 
       {/* NAVIGASI MENU UTAMA */}
       <div style={{ display: 'flex', borderBottom: '1px solid #ddd', marginBottom: '25px', overflowX: 'auto' }}>
