@@ -91,7 +91,6 @@ function App() {
   // ==========================================
   const [jenisLhv, setJenisLhv] = useState('Produksi Sendiri') 
   const [namaPerusahaan, setNamaPerusahaan] = useState('')
-  const [tanggal, setTanggal] = useState('') 
   const [tanggalLhv, setTanggalLhv] = useState('') 
   const [fileCover, setFileCover] = useState(null)
   const [fileLogo, setFileLogo] = useState(null)
@@ -269,7 +268,7 @@ function App() {
   const saveDraft = () => {
     if (window.isResetting) return;
     const draft = {
-      jenisLhv, namaPerusahaan, tanggal, tanggalLhv, idBerkas, permenperin, alamatKantor, alamatPabrik, skalaPerusahaan, noIzin,
+      jenisLhv, namaPerusahaan, tanggalLhv, idBerkas, permenperin, alamatKantor, alamatPabrik, skalaPerusahaan, noIzin,
       namaPerusahaanIndustri, alamatPerusahaanIndustri, skalaPerusahaanIndustri, noIzinPerusahaanIndustri,
       nilaiBmp, terbilangBmp, aspekBmp,
       tglVerifikasiDok, tglVerifikasiLapangan, kbli, kapasitasProduksi, jenisBarang, tipeBarang, spesifikasiBarang, kodeHs, merekBarang, kelompokBarang,
@@ -314,7 +313,6 @@ function App() {
         const d = JSON.parse(saved);
         if (d.jenisLhv !== undefined) setJenisLhv(d.jenisLhv);
         if (d.namaPerusahaan !== undefined) setNamaPerusahaan(d.namaPerusahaan);
-        if (d.tanggal !== undefined) setTanggal(d.tanggal);
         if (d.tanggalLhv !== undefined) setTanggalLhv(d.tanggalLhv);
         if (d.idBerkas !== undefined) setIdBerkas(d.idBerkas);
         
@@ -436,7 +434,7 @@ function App() {
     setStatus('Memproses data & gambar, mohon tunggu...');
     try {
       const state = {
-        jenisLhv, namaPerusahaan, tanggal, tanggalLhv, idBerkas, permenperin,
+        jenisLhv, namaPerusahaan, tanggalLhv, idBerkas, permenperin,
         skalaPerusahaan, noIzin,
         namaPerusahaanIndustri, alamatPerusahaanIndustri, skalaPerusahaanIndustri,
         noIzinPerusahaanIndustri, teleponKantorIndustri, faxKantorIndustri,
@@ -575,7 +573,6 @@ function App() {
             </div>
 
             <div><label style={{ fontWeight: 'bold' }}>{jenisLhv === 'Kerjasama' ? 'Nama Pelaku Usaha (Pemohon):' : 'Nama Perusahaan (Klien):'}</label><input type="text" value={namaPerusahaan} onChange={(e) => setNamaPerusahaan(e.target.value)} required style={inputStyle}/></div>
-            <div><label style={{ fontWeight: 'bold' }}>Tanggal Pelaksanaan Verifikasi:</label><input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} required style={inputStyle}/></div>
             <div><label style={{ fontWeight: 'bold' }}>Tanggal LHV (Tanggal Terbit Laporan):</label><input type="date" value={tanggalLhv} onChange={(e) => setTanggalLhv(e.target.value)} required style={inputStyle}/></div>
             
             <div style={{ padding: '20px', backgroundColor: '#e3f2fd', borderRadius: '6px' }}>

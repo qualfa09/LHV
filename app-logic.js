@@ -149,7 +149,9 @@
     const textFields = {
       jenis_lhv: state.jenisLhv,
       nama_perusahaan: state.namaPerusahaan,
-      tanggal_dibuat: DocxEngine.formatTanggalIndo(state.tanggal),
+      // "tanggal_dibuat" dipakai template di baris tanda tangan ("Semarang, {{ tanggal_dibuat }}")
+      // -- ini harus tanggal TERBIT LAPORAN (tanggalLhv), BUKAN tanggal pelaksanaan verifikasi.
+      tanggal_dibuat: DocxEngine.formatTanggalIndo(state.tanggalLhv),
       tanggal_lhv: DocxEngine.formatTanggalIndo(state.tanggalLhv),
       id_berkas: state.idBerkas,
       permenperin: state.permenperin,
