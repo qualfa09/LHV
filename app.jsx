@@ -95,6 +95,8 @@ function App() {
   const [tanggalLhv, setTanggalLhv] = useState('') 
   const [fileCover, setFileCover] = useState(null)
   const [fileLogo, setFileLogo] = useState(null)
+  const [fileFotoBarang, setFileFotoBarang] = useState(null)
+  const [fileFotoProdukUtama, setFileFotoProdukUtama] = useState(null)
 
   // ==========================================
   // STATE MENU 2: RINGKASAN EKSEKUTIF
@@ -451,6 +453,7 @@ function App() {
         statusPabrik, picPabrik, aktaPabrik, npwpPabrik,
         rekapBahanBaku, acuanPeraturan,
         fileCover, fileLogo, fileTtdVerifikator, fileStruktur, fileAlurProduksi,
+        fileFotoBarang, fileFotoProdukUtama,
         fileStrukturIndustri,
         formulirVerifikasi,
         fileBuktiPabrik, fileBom, fileSertifikatTkdn, fileBuktiBeli, fileKtp,
@@ -729,6 +732,23 @@ function App() {
                   <div><label style={{ fontWeight: 'bold', fontSize: '13px' }}>Kode HS:</label><input type="text" value={kodeHs} onChange={(e) => setKodeHs(e.target.value)} style={inputStyle} /></div>
                   <div style={{ gridColumn: '1 / -1' }}><label style={{ fontWeight: 'bold', fontSize: '13px' }}>{jenisLhv === 'Kerjasama' ? 'Kapasitas Produksi Perusahaan Industri:' : 'Kapasitas Produksi:'}</label><input type="text" value={kapasitasProduksi} onChange={(e) => setKapasitasProduksi(e.target.value)} style={inputStyle} /></div>
                   <div style={{ gridColumn: '1 / -1' }}><label style={{ fontWeight: 'bold', fontSize: '13px' }}>Spesifikasi Barang:</label><textarea rows="2" value={spesifikasiBarang} onChange={(e) => setSpesifikasiBarang(e.target.value)} style={inputStyle}></textarea></div>
+                  <div style={{ gridColumn: '1 / -1', padding: '15px', backgroundColor: '#f3f8ff', borderRadius: '6px' }}>
+                    <label style={{ fontWeight: 'bold', fontSize: '13px' }}>
+                      {jenisLhv === 'Kerjasama' ? 'Unggah Foto Produk (tampil di Ringkasan Eksekutif, tag {{ foto_produk }}):' : 'Unggah Foto Barang (tampil di Ringkasan Eksekutif, tag {{ foto_barang }}):'}
+                    </label><br/>
+                    {jenisLhv === 'Kerjasama' ? (
+                      <>
+                        <input type="file" accept="image/png, image/jpeg" onChange={(e) => setFileFotoProdukUtama(e.target.files[0])} style={{ width: '100%', marginTop: '10px' }}/>
+                        <ImagePreview file={fileFotoProdukUtama} targetWidth="7 cm" />
+                        <p style={{ fontSize: '12px', color: '#777', marginTop: '5px' }}>Catatan: kalau tidak diisi, foto pertama dari galeri "Foto Produk" di tab Dokumen Pendukung akan dipakai sebagai gantinya.</p>
+                      </>
+                    ) : (
+                      <>
+                        <input type="file" accept="image/png, image/jpeg" onChange={(e) => setFileFotoBarang(e.target.files[0])} style={{ width: '100%', marginTop: '10px' }}/>
+                        <ImagePreview file={fileFotoBarang} targetWidth="7 cm" />
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

@@ -306,10 +306,26 @@
       let nextRid = (usedIds.length ? Math.max(...usedIds) : 0) + 1;
       const newRelEntries = [];
 
-      const matches = rendered.match(runImgRegex) || [];
-      for (const runXml of matches) {
+      // Kumpulkan semua match beserta posisinya dulu (matchAll), baru bangun ulang
+      // string berdasarkan index -- supaya AMAN meski ada 2 run dengan teks
+      // yang kebetulan identik (mis. token yang sama dipakai di 2 tempat berbeda
+      // seperti foto_produk pada template Kerjasama). Pendekatan lama pakai
+      // rendered.replace(stringLiteral, ...) yang cuma mengganti kemunculan
+      // PERTAMA -- bisa membuat gambar "tertukar"/salah pasang bila teksnya sama.
+      const allMatches = [...rendered.matchAll(runImgRegex)];
+      let cursor = 0;
+      let out = "";
+      for (const m of allMatches) {
+        const runXml = m[0];
+        const startIdx = m.index;
+        out += rendered.slice(cursor, startIdx);
+        cursor = startIdx + runXml.length;
+
         const tokenMatch = IMG_TOKEN_RE.exec(runXml);
-        if (!tokenMatch) continue;
+        if (!tokenMatch) {
+          out += runXml;
+          continue;
+        }
         const fullToken = tokenMatch[0];
         const job = imageJobs.get(fullToken);
 
@@ -342,8 +358,10 @@
           picCounter++;
           replacement = buildDrawingXml(rId, picCounter, cx, cy);
         }
-        rendered = rendered.replace(runXml, replacement ? "<w:r>" + replacement + "</w:r>" : "");
+        out += replacement ? "<w:r>" + replacement + "</w:r>" : "";
       }
+      out += rendered.slice(cursor);
+      rendered = out;
 
       if (newRelEntries.length > 0) {
         relsXml = relsXml.replace("</Relationships>", newRelEntries.join("") + "</Relationships>");

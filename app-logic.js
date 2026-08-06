@@ -78,6 +78,8 @@
     { stateKey: "fileStruktur", contextKey: "struktur_organisasi", widthMm: 70 },
     { stateKey: "fileAlurProduksi", contextKey: "alur_produksi", widthMm: 70 },
     { stateKey: "fileStrukturIndustri", contextKey: "struktur_industri", widthMm: 70 },
+    // foto_barang: dipakai template TKDN di blok "Rincian Barang" (Ringkasan Eksekutif) sebagai 1 foto tunggal
+    { stateKey: "fileFotoBarang", contextKey: "foto_barang", widthMm: 70 },
   ];
 
   let tokenCounter = 0;
@@ -251,6 +253,30 @@
       );
     }
 
+    // --- PENANGANAN KHUSUS: foto_produk ---
+    // Di template Kerjasama, tag "foto_produk" dipakai DUA KALI dengan peran
+    // berbeda: (1) {{ foto_produk }} sebagai SATU foto tunggal di Ringkasan
+    // Eksekutif, dan (2) {% for baris in foto_produk | batch(2,None) %}
+    // sebagai GALERI banyak foto di Dokumen Pendukung. Kalau context.foto_produk
+    // cuma berupa array biasa, peran (1) akan tampil rusak/berantakan (array
+    // ikut ter-render jadi teks, bukan gambar) -- ini penyebab hasil "tertukar"
+    // untuk skema Kerjasama. Solusinya: array yang sama dipakai untuk peran (2)
+    // (for-loop tetap bisa iterasi normal), TAPI diberi toString() khusus supaya
+    // saat dipakai sebagai {{ foto_produk }} tunggal, ia otomatis menampilkan
+    // 1 foto saja: foto "Foto Produk Utama" (kalau diisi di tab Ringkasan
+    // Eksekutif), atau foto pertama dari galeri sebagai cadangan.
+    const galeriFotoProduk = context.foto_produk || [];
+    let fotoProdukTunggalToken = "";
+    if (state.fileFotoProdukUtama) {
+      const token = nextToken("foto_produk_utama");
+      imageJobs.set(token, { blob: state.fileFotoProdukUtama, widthMm: 70 });
+      fotoProdukTunggalToken = token;
+    } else if (galeriFotoProduk.length > 0) {
+      fotoProdukTunggalToken = galeriFotoProduk[0].gambar;
+    }
+    galeriFotoProduk.toString = () => fotoProdukTunggalToken;
+    context.foto_produk = galeriFotoProduk;
+
     return { context, imageJobs, tableJobs };
   }
 
@@ -363,6 +389,7 @@
 
   global.LHVLogic = {
     generateAndDownload,
+    buildContext,
     buildFilename,
     dbSaveProject,
     dbListProjects,
