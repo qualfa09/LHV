@@ -263,39 +263,191 @@ function App() {
   const [rekapBahanBaku, setRekapBahanBaku] = useState([{ id: 1, nama_bahan: '', produsen: '', asal: 'DN' }])
 
   // ==========================================
-  // FITUR SIMPAN OTOMATIS (AUTO-SAVE) KE LOCALSTORAGE
   // ==========================================
-  const saveDraft = () => {
+  // FITUR SIMPAN OTOMATIS (AUTO-SAVE) KE INDEXEDDB
+  // Menyimpan SEMUA isian form -- termasuk foto & dokumen yang sudah
+  // diupload -- supaya kalau tab browser tertutup/refresh tidak sengaja,
+  // pekerjaan verifikator tidak hilang. (localStorage lama tidak dipakai
+  // lagi di sini karena tidak bisa menyimpan file.)
+  // ==========================================
+  const allSetters = {
+    jenisLhv: setJenisLhv,
+    namaPerusahaan: setNamaPerusahaan,
+    tanggalLhv: setTanggalLhv,
+    fileCover: setFileCover,
+    fileLogo: setFileLogo,
+    fileFotoBarang: setFileFotoBarang,
+    fileFotoProdukUtama: setFileFotoProdukUtama,
+    idBerkas: setIdBerkas,
+    permenperin: setPermenperin,
+    alamatKantor: setAlamatKantor,
+    alamatPabrik: setAlamatPabrik,
+    skalaPerusahaan: setSkalaPerusahaan,
+    noIzin: setNoIzin,
+    namaPerusahaanIndustri: setNamaPerusahaanIndustri,
+    alamatPerusahaanIndustri: setAlamatPerusahaanIndustri,
+    skalaPerusahaanIndustri: setSkalaPerusahaanIndustri,
+    noIzinPerusahaanIndustri: setNoIzinPerusahaanIndustri,
+    nilaiBmp: setNilaiBmp,
+    terbilangBmp: setTerbilangBmp,
+    aspekBmp: setAspekBmp,
+    tglVerifikasiDok: setTglVerifikasiDok,
+    tglVerifikasiLapangan: setTglVerifikasiLapangan,
+    kbli: setKbli,
+    kapasitasProduksi: setKapasitasProduksi,
+    jenisBarang: setJenisBarang,
+    tipeBarang: setTipeBarang,
+    spesifikasiBarang: setSpesifikasiBarang,
+    kodeHs: setKodeHs,
+    merekBarang: setMerekBarang,
+    kelompokBarang: setKelompokBarang,
+    nilaiTkdn: setNilaiTkdn,
+    terbilangTkdn: setTerbilangTkdn,
+    nilaiBrainware: setNilaiBrainware,
+    terbilangBrainware: setTerbilangBrainware,
+    namaVerifikator: setNamaVerifikator,
+    nipVerifikator: setNipVerifikator,
+    fileTtdVerifikator: setFileTtdVerifikator,
+    pejabatMengetahui: setPejabatMengetahui,
+    namaPejabat: setNamaPejabat,
+    nipPejabat: setNipPejabat,
+    acuanPeraturan: setAcuanPeraturan,
+    formulirVerifikasi: setFormulirVerifikasi,
+    teleponKantor: setTeleponKantor,
+    faxKantor: setFaxKantor,
+    emailKantor: setEmailKantor,
+    websiteKantor: setWebsiteKantor,
+    statusKantor: setStatusKantor,
+    picKantor: setPicKantor,
+    aktaKantor: setAktaKantor,
+    npwpKantor: setNpwpKantor,
+    teleponPabrik: setTeleponPabrik,
+    faxPabrik: setFaxPabrik,
+    emailPabrik: setEmailPabrik,
+    websitePabrik: setWebsitePabrik,
+    statusPabrik: setStatusPabrik,
+    picPabrik: setPicPabrik,
+    aktaPabrik: setAktaPabrik,
+    npwpPabrik: setNpwpPabrik,
+    teleponKantorIndustri: setTeleponKantorIndustri,
+    faxKantorIndustri: setFaxKantorIndustri,
+    emailKantorIndustri: setEmailKantorIndustri,
+    websiteKantorIndustri: setWebsiteKantorIndustri,
+    statusKantorIndustri: setStatusKantorIndustri,
+    picKantorIndustri: setPicKantorIndustri,
+    aktaKantorIndustri: setAktaKantorIndustri,
+    npwpKantorIndustri: setNpwpKantorIndustri,
+    samaDenganKantor: setSamaDenganKantor,
+    fileStruktur: setFileStruktur,
+    fileAlurProduksi: setFileAlurProduksi,
+    fileStrukturIndustri: setFileStrukturIndustri,
+    fileBuktiPabrik: setFileBuktiPabrik,
+    fileBom: setFileBom,
+    fileSertifikatTkdn: setFileSertifikatTkdn,
+    fileBuktiBeli: setFileBuktiBeli,
+    fileKtp: setFileKtp,
+    fileBuktiKerjasama: setFileBuktiKerjasama,
+    fileTenagaKerjaBmp: setFileTenagaKerjaBmp,
+    fileInvestasiBmp: setFileInvestasiBmp,
+    fileKemitraanBmp: setFileKemitraanBmp,
+    fileSubstitusiBmp: setFileSubstitusiBmp,
+    fileMesinDnBmp: setFileMesinDnBmp,
+    fileLokasiBmp: setFileLokasiBmp,
+    fileI40Bmp: setFileI40Bmp,
+    fileSdmBmp: setFileSdmBmp,
+    fileSertifikatBmp: setFileSertifikatBmp,
+    fileHijauBmp: setFileHijauBmp,
+    fileEksporBmp: setFileEksporBmp,
+    fileMerekDnBmp: setFileMerekDnBmp,
+    fileEsgBmp: setFileEsgBmp,
+    fileAwardsBmp: setFileAwardsBmp,
+    fileSiinasBmp: setFileSiinasBmp,
+    fileNibRba: setFileNibRba,
+    fileSertifikatStandar: setFileSertifikatStandar,
+    fileIzinUsaha: setFileIzinUsaha,
+    fileNpwpLampiran: setFileNpwpLampiran,
+    fileSertifikatMerek: setFileSertifikatMerek,
+    fileSertifikatProduk: setFileSertifikatProduk,
+    fileNie: setFileNie,
+    fileBpom: setFileBpom,
+    fileFotoProduk: setFileFotoProduk,
+    fileFotoBahanBaku: setFileFotoBahanBaku,
+    fileInvoiceBahanBaku: setFileInvoiceBahanBaku,
+    fileAlurProsesLampiran: setFileAlurProsesLampiran,
+    fileDaftarGaji: setFileDaftarGaji,
+    fileSampelKtp: setFileSampelKtp,
+    fileStrukturPabrik: setFileStrukturPabrik,
+    fileFotoMesin: setFileFotoMesin,
+    fileDaftarPenyusutan: setFileDaftarPenyusutan,
+    fileBuktiListrik: setFileBuktiListrik,
+    fileAktaSewa: setFileAktaSewa,
+    fileGeotagging: setFileGeotagging,
+    rekapBahanBaku: setRekapBahanBaku,
+  };
+
+  const buildFullState = () => ({
+    jenisLhv, namaPerusahaan, tanggalLhv, idBerkas, permenperin,
+    skalaPerusahaan, noIzin,
+    namaPerusahaanIndustri, alamatPerusahaanIndustri, skalaPerusahaanIndustri,
+    noIzinPerusahaanIndustri, teleponKantorIndustri, faxKantorIndustri,
+    emailKantorIndustri, websiteKantorIndustri, statusKantorIndustri,
+    picKantorIndustri, aktaKantorIndustri, npwpKantorIndustri,
+    nilaiBmp, terbilangBmp, aspekBmp,
+    tglVerifikasiDok, tglVerifikasiLapangan, kbli, kapasitasProduksi,
+    jenisBarang, tipeBarang, spesifikasiBarang, kodeHs, merekBarang,
+    kelompokBarang, nilaiTkdn, terbilangTkdn, nilaiBrainware, terbilangBrainware,
+    namaVerifikator, nipVerifikator, pejabatMengetahui, namaPejabat, nipPejabat,
+    alamatKantor, teleponKantor, faxKantor, emailKantor, websiteKantor,
+    statusKantor, picKantor, aktaKantor, npwpKantor,
+    alamatPabrik, teleponPabrik, faxPabrik, emailPabrik, websitePabrik,
+    statusPabrik, picPabrik, aktaPabrik, npwpPabrik,
+    rekapBahanBaku, acuanPeraturan, samaDenganKantor,
+    fileCover, fileLogo, fileTtdVerifikator, fileStruktur, fileAlurProduksi,
+    fileFotoBarang, fileFotoProdukUtama,
+    fileStrukturIndustri,
+    formulirVerifikasi,
+    fileBuktiPabrik, fileBom, fileSertifikatTkdn, fileBuktiBeli, fileKtp,
+    fileBuktiKerjasama,
+    fileTenagaKerjaBmp, fileInvestasiBmp, fileKemitraanBmp, fileSubstitusiBmp,
+    fileMesinDnBmp, fileLokasiBmp, fileI40Bmp, fileSdmBmp, fileSertifikatBmp,
+    fileHijauBmp, fileEksporBmp, fileMerekDnBmp, fileEsgBmp, fileAwardsBmp,
+    fileSiinasBmp,
+    fileNibRba, fileSertifikatStandar, fileIzinUsaha, fileNpwpLampiran,
+    fileSertifikatMerek, fileSertifikatProduk, fileNie, fileBpom,
+    fileFotoProduk, fileFotoBahanBaku, fileInvoiceBahanBaku,
+    fileAlurProsesLampiran, fileDaftarGaji, fileSampelKtp, fileStrukturPabrik,
+    fileFotoMesin, fileDaftarPenyusutan, fileBuktiListrik, fileAktaSewa,
+    fileGeotagging
+  });
+
+  // Ref selalu menunjuk ke state TERBARU, dipakai oleh autosave berkala
+  // supaya tidak perlu daftar dependency yang sangat panjang di useEffect.
+  const latestStateRef = React.useRef(null);
+  latestStateRef.current = buildFullState();
+
+  const [draftInfo, setDraftInfo] = useState(null); // { savedAt } | null
+  const draftSavingRef = React.useRef(false);
+
+  const saveDraft = async () => {
     if (window.isResetting) return;
-    const draft = {
-      jenisLhv, namaPerusahaan, tanggalLhv, idBerkas, permenperin, alamatKantor, alamatPabrik, skalaPerusahaan, noIzin,
-      namaPerusahaanIndustri, alamatPerusahaanIndustri, skalaPerusahaanIndustri, noIzinPerusahaanIndustri,
-      nilaiBmp, terbilangBmp, aspekBmp,
-      tglVerifikasiDok, tglVerifikasiLapangan, kbli, kapasitasProduksi, jenisBarang, tipeBarang, spesifikasiBarang, kodeHs, merekBarang, kelompokBarang,
-      nilaiTkdn, terbilangTkdn, nilaiBrainware, terbilangBrainware,
-      namaVerifikator, nipVerifikator, pejabatMengetahui, namaPejabat, nipPejabat,
-      teleponKantor, faxKantor, emailKantor, websiteKantor, statusKantor, picKantor, aktaKantor, npwpKantor,
-      teleponPabrik, faxPabrik, emailPabrik, websitePabrik, statusPabrik, picPabrik, aktaPabrik, npwpPabrik,
-      teleponKantorIndustri, faxKantorIndustri, emailKantorIndustri, websiteKantorIndustri, statusKantorIndustri, picKantorIndustri, aktaKantorIndustri, npwpKantorIndustri,
-      acuanPeraturan, rekapBahanBaku, samaDenganKantor
-    };
-    localStorage.setItem('draft_lhv_generator', JSON.stringify(draft));
+    if (draftSavingRef.current) return; // hindari tumpang tindih simpanan
+    draftSavingRef.current = true;
+    try {
+      await LHVLogic.dbSaveDraft(latestStateRef.current);
+      setDraftInfo({ savedAt: Date.now() });
+    } catch (e) {
+      console.warn('Gagal auto-save draft:', e);
+    } finally {
+      draftSavingRef.current = false;
+    }
   };
 
   const hapusDraft = () => {
-    if(window.confirm("Yakin ingin mereset formulir? Semua ketikan Anda akan hilang.")) {
-       // Aktifkan status reset agar saveDraft otomatis mati
-       window.isResetting = true; 
-       
-       // Hapus memori draf
-       localStorage.removeItem('draft_lhv_generator');
-       
-       // Paksa kosongkan form HTML
-       const form = document.querySelector('form');
-       if (form) form.reset();
-
-       // Paksa refresh halaman dari awal tanpa cache
-       window.location.replace(window.location.pathname);
+    if (window.confirm("Yakin ingin mulai laporan baru? Semua isian & foto yang sudah diupload di sesi ini akan dihapus.")) {
+      window.isResetting = true;
+      LHVLogic.dbClearDraft().finally(() => {
+        window.location.replace(window.location.pathname);
+      });
     }
   };
 
@@ -304,85 +456,35 @@ function App() {
     setFormulirVerifikasi(Array.from({ length: jumlah }, (_, i) => ({ id: Date.now() + i, judul: `Formulir 1.${i + 1}`, file: null })));
   }
 
-  // Load Draft saat inisialisasi aplikasi
+  // Muat draft (kalau ada) saat aplikasi pertama dibuka
   useEffect(() => {
-    const saved = localStorage.getItem('draft_lhv_generator');
-    let loadedPermenperin = permenperin; 
-    if (saved) {
+    let loadedPermenperin = permenperin;
+    (async () => {
       try {
-        const d = JSON.parse(saved);
-        if (d.jenisLhv !== undefined) setJenisLhv(d.jenisLhv);
-        if (d.namaPerusahaan !== undefined) setNamaPerusahaan(d.namaPerusahaan);
-        if (d.tanggalLhv !== undefined) setTanggalLhv(d.tanggalLhv);
-        if (d.idBerkas !== undefined) setIdBerkas(d.idBerkas);
-        
-        if (d.permenperin !== undefined) {
-           setPermenperin(d.permenperin);
-           loadedPermenperin = d.permenperin;
+        const rec = await LHVLogic.dbLoadDraft();
+        if (rec && rec.state) {
+          const d = rec.state;
+          Object.keys(allSetters).forEach((key) => {
+            if (d[key] !== undefined && d[key] !== null) allSetters[key](d[key]);
+          });
+          if (d.permenperin) loadedPermenperin = d.permenperin;
+          setDraftInfo({ savedAt: rec.savedAt });
         }
-        
-        if (d.alamatKantor !== undefined) setAlamatKantor(d.alamatKantor);
-        if (d.alamatPabrik !== undefined) setAlamatPabrik(d.alamatPabrik);
-        if (d.skalaPerusahaan !== undefined) setSkalaPerusahaan(d.skalaPerusahaan);
-        if (d.noIzin !== undefined) setNoIzin(d.noIzin);
-        if (d.namaPerusahaanIndustri !== undefined) setNamaPerusahaanIndustri(d.namaPerusahaanIndustri);
-        if (d.alamatPerusahaanIndustri !== undefined) setAlamatPerusahaanIndustri(d.alamatPerusahaanIndustri);
-        if (d.skalaPerusahaanIndustri !== undefined) setSkalaPerusahaanIndustri(d.skalaPerusahaanIndustri);
-        if (d.noIzinPerusahaanIndustri !== undefined) setNoIzinPerusahaanIndustri(d.noIzinPerusahaanIndustri);
-        if (d.nilaiBmp !== undefined) setNilaiBmp(d.nilaiBmp);
-        if (d.terbilangBmp !== undefined) setTerbilangBmp(d.terbilangBmp);
-        if (d.aspekBmp !== undefined) setAspekBmp(d.aspekBmp);
-        if (d.tglVerifikasiDok !== undefined) setTglVerifikasiDok(d.tglVerifikasiDok);
-        if (d.tglVerifikasiLapangan !== undefined) setTglVerifikasiLapangan(d.tglVerifikasiLapangan);
-        if (d.kbli !== undefined) setKbli(d.kbli);
-        if (d.kapasitasProduksi !== undefined) setKapasitasProduksi(d.kapasitasProduksi);
-        if (d.jenisBarang !== undefined) setJenisBarang(d.jenisBarang);
-        if (d.tipeBarang !== undefined) setTipeBarang(d.tipeBarang);
-        if (d.spesifikasiBarang !== undefined) setSpesifikasiBarang(d.spesifikasiBarang);
-        if (d.kodeHs !== undefined) setKodeHs(d.kodeHs);
-        if (d.merekBarang !== undefined) setMerekBarang(d.merekBarang);
-        if (d.kelompokBarang !== undefined) setKelompokBarang(d.kelompokBarang);
-        if (d.nilaiTkdn !== undefined) setNilaiTkdn(d.nilaiTkdn);
-        if (d.terbilangTkdn !== undefined) setTerbilangTkdn(d.terbilangTkdn);
-        if (d.nilaiBrainware !== undefined) setNilaiBrainware(d.nilaiBrainware);
-        if (d.terbilangBrainware !== undefined) setTerbilangBrainware(d.terbilangBrainware);
-        if (d.namaVerifikator !== undefined) setNamaVerifikator(d.namaVerifikator);
-        if (d.nipVerifikator !== undefined) setNipVerifikator(d.nipVerifikator);
-        if (d.pejabatMengetahui !== undefined) setPejabatMengetahui(d.pejabatMengetahui);
-        if (d.namaPejabat !== undefined) setNamaPejabat(d.namaPejabat);
-        if (d.nipPejabat !== undefined) setNipPejabat(d.nipPejabat);
-        if (d.teleponKantor !== undefined) setTeleponKantor(d.teleponKantor);
-        if (d.faxKantor !== undefined) setFaxKantor(d.faxKantor);
-        if (d.emailKantor !== undefined) setEmailKantor(d.emailKantor);
-        if (d.websiteKantor !== undefined) setWebsiteKantor(d.websiteKantor);
-        if (d.statusKantor !== undefined) setStatusKantor(d.statusKantor);
-        if (d.picKantor !== undefined) setPicKantor(d.picKantor);
-        if (d.aktaKantor !== undefined) setAktaKantor(d.aktaKantor);
-        if (d.npwpKantor !== undefined) setNpwpKantor(d.npwpKantor);
-        if (d.teleponPabrik !== undefined) setTeleponPabrik(d.teleponPabrik);
-        if (d.faxPabrik !== undefined) setFaxPabrik(d.faxPabrik);
-        if (d.emailPabrik !== undefined) setEmailPabrik(d.emailPabrik);
-        if (d.websitePabrik !== undefined) setWebsitePabrik(d.websitePabrik);
-        if (d.statusPabrik !== undefined) setStatusPabrik(d.statusPabrik);
-        if (d.picPabrik !== undefined) setPicPabrik(d.picPabrik);
-        if (d.aktaPabrik !== undefined) setAktaPabrik(d.aktaPabrik);
-        if (d.npwpPabrik !== undefined) setNpwpPabrik(d.npwpPabrik);
-        if (d.teleponKantorIndustri !== undefined) setTeleponKantorIndustri(d.teleponKantorIndustri);
-        if (d.faxKantorIndustri !== undefined) setFaxKantorIndustri(d.faxKantorIndustri);
-        if (d.emailKantorIndustri !== undefined) setEmailKantorIndustri(d.emailKantorIndustri);
-        if (d.websiteKantorIndustri !== undefined) setWebsiteKantorIndustri(d.websiteKantorIndustri);
-        if (d.statusKantorIndustri !== undefined) setStatusKantorIndustri(d.statusKantorIndustri);
-        if (d.picKantorIndustri !== undefined) setPicKantorIndustri(d.picKantorIndustri);
-        if (d.aktaKantorIndustri !== undefined) setAktaKantorIndustri(d.aktaKantorIndustri);
-        if (d.npwpKantorIndustri !== undefined) setNpwpKantorIndustri(d.npwpKantorIndustri);
-        if (d.acuanPeraturan !== undefined) setAcuanPeraturan(d.acuanPeraturan);
-        if (d.rekapBahanBaku !== undefined) setRekapBahanBaku(d.rekapBahanBaku);
-        if (d.samaDenganKantor !== undefined) setSamaDenganKantor(d.samaDenganKantor);
       } catch (e) {
-        console.error("Gagal load draft:", e);
+        console.warn('Gagal memuat draft tersimpan:', e);
       }
-    }
-    generateDefaultForms(loadedPermenperin);
+      generateDefaultForms(loadedPermenperin);
+    })();
+
+    // Simpan berkala setiap 20 detik (jaring pengaman selain saat pindah tab/klik keluar field)
+    const intervalId = setInterval(saveDraft, 20000);
+    // Simpan sebisa mungkin saat tab/browser ditutup
+    const beforeUnloadHandler = () => { saveDraft(); };
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+    };
   }, []);
 
   const handlePermenperinChange = (e) => {
@@ -433,40 +535,7 @@ function App() {
     e.preventDefault();
     setStatus('Memproses data & gambar, mohon tunggu...');
     try {
-      const state = {
-        jenisLhv, namaPerusahaan, tanggalLhv, idBerkas, permenperin,
-        skalaPerusahaan, noIzin,
-        namaPerusahaanIndustri, alamatPerusahaanIndustri, skalaPerusahaanIndustri,
-        noIzinPerusahaanIndustri, teleponKantorIndustri, faxKantorIndustri,
-        emailKantorIndustri, websiteKantorIndustri, statusKantorIndustri,
-        picKantorIndustri, aktaKantorIndustri, npwpKantorIndustri,
-        nilaiBmp, terbilangBmp, aspekBmp,
-        tglVerifikasiDok, tglVerifikasiLapangan, kbli, kapasitasProduksi,
-        jenisBarang, tipeBarang, spesifikasiBarang, kodeHs, merekBarang,
-        kelompokBarang, nilaiTkdn, terbilangTkdn, nilaiBrainware, terbilangBrainware,
-        namaVerifikator, nipVerifikator, pejabatMengetahui, namaPejabat, nipPejabat,
-        alamatKantor, teleponKantor, faxKantor, emailKantor, websiteKantor,
-        statusKantor, picKantor, aktaKantor, npwpKantor,
-        alamatPabrik, teleponPabrik, faxPabrik, emailPabrik, websitePabrik,
-        statusPabrik, picPabrik, aktaPabrik, npwpPabrik,
-        rekapBahanBaku, acuanPeraturan,
-        fileCover, fileLogo, fileTtdVerifikator, fileStruktur, fileAlurProduksi,
-        fileFotoBarang, fileFotoProdukUtama,
-        fileStrukturIndustri,
-        formulirVerifikasi,
-        fileBuktiPabrik, fileBom, fileSertifikatTkdn, fileBuktiBeli, fileKtp,
-        fileBuktiKerjasama,
-        fileTenagaKerjaBmp, fileInvestasiBmp, fileKemitraanBmp, fileSubstitusiBmp,
-        fileMesinDnBmp, fileLokasiBmp, fileI40Bmp, fileSdmBmp, fileSertifikatBmp,
-        fileHijauBmp, fileEksporBmp, fileMerekDnBmp, fileEsgBmp, fileAwardsBmp,
-        fileSiinasBmp,
-        fileNibRba, fileSertifikatStandar, fileIzinUsaha, fileNpwpLampiran,
-        fileSertifikatMerek, fileSertifikatProduk, fileNie, fileBpom,
-        fileFotoProduk, fileFotoBahanBaku, fileInvoiceBahanBaku,
-        fileAlurProsesLampiran, fileDaftarGaji, fileSampelKtp, fileStrukturPabrik,
-        fileFotoMesin, fileDaftarPenyusutan, fileBuktiListrik, fileAktaSewa,
-        fileGeotagging
-      };
+      const state = buildFullState();
 
       const filename = await LHVLogic.generateAndDownload(state, (msg) => { console.log('[LHV]', msg); setStatus(msg); });
 
@@ -481,8 +550,8 @@ function App() {
         console.warn('Gagal menyimpan ke IndexedDB (tidak fatal):', dbErr);
       }
 
-      setStatus('Sukses! File ' + filename + ' berhasil dibuat & diunduh.');
-      localStorage.removeItem('draft_lhv_generator');
+      setStatus('Sukses! File ' + filename + ' berhasil dibuat & diunduh. (Isian form masih tersimpan sebagai draft kalau perlu generate ulang/perbaikan.)');
+      await saveDraft();
     } catch (err) {
       console.error(err);
       setStatus('Error: ' + (err && err.message ? err.message : String(err)) + (err && err.stack ? ('\n\n' + err.stack.split('\n').slice(0,3).join('\n')) : ''));
@@ -541,6 +610,12 @@ function App() {
           border: '1px solid ' + (status.startsWith('Error') ? '#ef9a9a' : status.startsWith('Sukses') ? '#a5d6a7' : '#ffcc80'),
           whiteSpace: 'pre-wrap'
         }}>{status}</p>
+      )}
+
+      {draftInfo && (
+        <p style={{ textAlign: 'center', fontSize: '12px', color: '#888', margin: '0 0 10px 0' }}>
+          💾 Draft tersimpan otomatis (termasuk foto) — terakhir: {new Date(draftInfo.savedAt).toLocaleTimeString('id-ID')}
+        </p>
       )}
 
       {/* NAVIGASI MENU UTAMA */}
@@ -1093,7 +1168,7 @@ function App() {
               onClick={hapusDraft} 
               style={{ padding: '10px 15px', backgroundColor: '#ffebee', color: '#c62828', border: '1px solid #ffcdd2', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
             >
-              🗑️ Reset Data
+              🗑️ Mulai Laporan Baru (Hapus Draft)
             </button>
           </div>
 

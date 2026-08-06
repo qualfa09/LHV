@@ -338,18 +338,27 @@
   }
 
   // --------------------------------------------------------------------
-  // Penyimpanan proyek di IndexedDB (untuk banyak draft LHV per perangkat)
+  // Penyimpanan proyek & draft di IndexedDB
+  // - STORE_NAME "projects": daftar LHV yang sudah pernah di-generate
+  // - DRAFT_STORE "draft": auto-save form yang sedang diisi (teks + file),
+  //   supaya kalau tab browser tertutup/refresh tidak sengaja, isian
+  //   verifikator tidak hilang.
   // --------------------------------------------------------------------
   const DB_NAME = "lhv_generator_db";
   const STORE_NAME = "projects";
+  const DRAFT_STORE = "draft";
+  const DRAFT_ID = "current";
 
   function openDb() {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1);
-      req.onupgradeneeded = () => {
+      const req = indexedDB.open(DB_NAME, 2);
+      req.onupgradeneeded = (ev) => {
         const db = req.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains(DRAFT_STORE)) {
+          db.createObjectStore(DRAFT_STORE, { keyPath: "id" });
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -389,6 +398,37 @@
     });
   }
 
+  // --- Auto-save draft (form yang sedang diisi, termasuk file) ---
+  async function dbSaveDraft(state) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, "readwrite");
+      tx.objectStore(DRAFT_STORE).put({ id: DRAFT_ID, state, savedAt: Date.now() });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function dbLoadDraft() {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, "readonly");
+      const req = tx.objectStore(DRAFT_STORE).get(DRAFT_ID);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function dbClearDraft() {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, "readwrite");
+      tx.objectStore(DRAFT_STORE).delete(DRAFT_ID);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
   global.LHVLogic = {
     generateAndDownload,
     buildContext,
@@ -396,6 +436,9 @@
     dbSaveProject,
     dbListProjects,
     dbDeleteProject,
+    dbSaveDraft,
+    dbLoadDraft,
+    dbClearDraft,
     TEMPLATE_MAP,
   };
 })(window);
