@@ -291,16 +291,37 @@
     return t;
   }
 
+  function buatInisial(namaVerifikator) {
+    const nama = (namaVerifikator || "").trim();
+    return nama
+      ? nama.split(/\s+/).map((k) => k[0].toUpperCase()).join("")
+      : "VER";
+  }
+
   function buildFilename(state) {
     const idB = bersihkanTeks(state.idBerkas);
     const np = bersihkanTeks(state.namaPerusahaan);
     const nprod = bersihkanTeks(state.jenisBarang);
-    const namaVerifikator = (state.namaVerifikator || "").trim();
-    const inisial = namaVerifikator
-      ? namaVerifikator.split(/\s+/).map((k) => k[0].toUpperCase()).join("")
-      : "VER";
+    const inisial = buatInisial(state.namaVerifikator);
     const teksJenis = state.jenisLhv === "BMP" ? "LHV BMP" : "LHV TKDN";
     return `${idB}_${teksJenis} ${np}_${nprod}_${inisial}.docx`;
+  }
+
+  // Format resmi: TKDN{tahun}-{bulan}-BBSPJPPI-{ID Berkas}-{Inisial Verifikator}
+  // (dipakai di cover laporan, bukan di badan dokumen -- badan dokumen tetap
+  // menampilkan ID Berkas apa adanya lewat tag {{ id_berkas }})
+  function buildNoLhv(state) {
+    const prefix = state.jenisLhv === "BMP" ? "BMP" : "TKDN";
+    let tahun = new Date().getFullYear();
+    let bulan = new Date().getMonth() + 1;
+    if (state.tanggalLhv && /^\d{4}-\d{2}/.test(state.tanggalLhv)) {
+      const [y, m] = state.tanggalLhv.split("-");
+      tahun = parseInt(y, 10);
+      bulan = parseInt(m, 10);
+    }
+    const idB = (state.idBerkas || "").trim() || "-";
+    const inisial = buatInisial(state.namaVerifikator);
+    return `${prefix}${tahun}-${bulan}-BBSPJPPI-${idB}-${inisial}`;
   }
 
   // --------------------------------------------------------------------
@@ -433,6 +454,7 @@
     generateAndDownload,
     buildContext,
     buildFilename,
+    buildNoLhv,
     dbSaveProject,
     dbListProjects,
     dbDeleteProject,

@@ -555,7 +555,7 @@ function App() {
     return {
       judulLaporan,
       namaLembaga: namaLembagaCover,
-      noLhv: idBerkas,
+      noLhv: LHVLogic.buildNoLhv({ jenisLhv, tanggalLhv, idBerkas, namaVerifikator }),
       namaPerusahaan,
       kbliKode: kbli,
       kbliDeskripsi,

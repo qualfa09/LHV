@@ -3,8 +3,10 @@
    ------------------------------------------------------------------------
    Menggambar cover laporan LHV secara otomatis di <canvas>, lalu
    menghasilkannya sebagai Blob PNG -- dipakai sebagai pengganti upload
-   file cover manual. Desain meniru pola: diamond foto produk + latar
-   pegunungan geometris ungu, warna & isi teks bisa diatur.
+   file cover manual. Desain: pita diagonal 3 warna (oranye-merah-navy)
+   di pojok kiri atas & kiri bawah, diamond foto produk (border oranye),
+   2 diamond aksen (merah & oranye kecil), siluet kota transparan di kanan
+   bawah, dengan latar krem lembut.
    ========================================================================== */
 
 (function (global) {
@@ -33,7 +35,7 @@
     });
   }
 
-  // --- Util warna: hex -> HSL, lalu bikin variasi shade dari 1 warna dasar ---
+  // --- Util warna ---
   function hexToHsl(hex) {
     hex = hex.replace('#', '');
     if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
@@ -56,7 +58,13 @@
     return { h: h * 360, s: s * 100, l: l * 100 };
   }
   function hsl(h, s, l, a) {
-    return `hsla(${h}, ${s}%, ${l}%, ${a === undefined ? 1 : a})`;
+    h = ((h % 360) + 360) % 360;
+    return `hsla(${h}, ${Math.max(0, Math.min(100, s))}%, ${Math.max(0, Math.min(100, l))}%, ${a === undefined ? 1 : a})`;
+  }
+  function darken(colorHsl, amount) {
+    const m = colorHsl.match(/hsla?\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%/);
+    if (!m) return colorHsl;
+    return hsl(parseFloat(m[1]), parseFloat(m[2]), Math.max(0, parseFloat(m[3]) - amount));
   }
 
   function wrapText(ctx, text, maxWidth) {
@@ -92,6 +100,47 @@
     ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   }
 
+  // Pita diagonal 3 warna dari 1 sudut. bands: [{width, color}], memanjang
+  // menembus tepi kanvas (aman, otomatis terpotong oleh clip kanvas).
+  function drawRibbonBand(ctx, cx, cy, angleDeg, bands, length) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((angleDeg * Math.PI) / 180);
+    let offset = 0;
+    bands.forEach((b) => {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(-length / 2, offset, length, b.width);
+      offset += b.width;
+    });
+    ctx.restore();
+  }
+
+  // Segitiga kecil "lipatan" di ujung pita, kesan origami/ribbon fold
+  function foldFlap(ctx, points, color) {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  // Siluet kota sangat transparan (elemen dekoratif kanan-bawah)
+  function drawSkyline(ctx, baseX, baseY, totalW, color) {
+    const buildings = [
+      { w: 60, h: 140 }, { w: 40, h: 90 }, { w: 55, h: 190 }, { w: 35, h: 110 },
+      { w: 45, h: 150 }, { w: 30, h: 80 }, { w: 50, h: 170 }, { w: 65, h: 130 },
+      { w: 38, h: 100 }, { w: 42, h: 160 },
+    ];
+    let x = baseX;
+    ctx.fillStyle = color;
+    buildings.forEach((b) => {
+      ctx.fillRect(x, baseY - b.h, b.w, b.h);
+      x += b.w;
+      if (x > baseX + totalW) return;
+    });
+  }
+
   async function generateCoverImage(opts) {
     const {
       judulLaporan,
@@ -113,160 +162,168 @@
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Latar putih
-    ctx.fillStyle = '#ffffff';
+    // ---------------- Palet warna (oranye bisa diganti user, merah &
+    // navy diturunkan otomatis supaya tetap harmonis) ----------------
+    const oh = hexToHsl(baseColor || '#F2941D');
+    const ORANGE = hsl(oh.h, Math.min(oh.s, 90), Math.max(Math.min(oh.l, 62), 45));
+    const RED = hsl(oh.h - 26, Math.min(oh.s + 10, 75), 42);
+    const RED_DARK = hsl(oh.h - 26, Math.min(oh.s + 10, 75), 30);
+    const NAVY = '#2B3990';
+    const NAVY_DARK = '#1E2860';
+    const CREAM = '#FBF2EC';
+    const TEXT_NAVY = '#1E2860';
+    const TEXT_SOFT = '#4A5590';
+
+    // ---------------- Latar ----------------
+    ctx.fillStyle = CREAM;
     ctx.fillRect(0, 0, W, H);
 
-    const navy = '#0d2c6c';
-    const navySoft = '#33488a';
-    const base = hexToHsl(baseColor || '#8e3d9c');
+    // ---------------- Siluet kota (dekorasi kanan-bawah, sangat transparan) ----------------
+    drawSkyline(ctx, 480, 1180, 480, 'rgba(80,60,90,0.05)');
 
-    // ---------------- Header: logo ----------------
-    try {
-      const [logoKp, logoBb] = await Promise.all([
-        loadImage(logoKemenperinSrc),
-        loadImage(logoBbsSrc),
-      ]);
-      const kpH = 95, kpW = (logoKp.width / logoKp.height) * kpH;
-      const bbH = 95, bbW = (logoBb.width / logoBb.height) * bbH;
-      const gap = 30;
-      const totalW = kpW + gap + bbW;
-      const startX = (W - totalW) / 2;
-      ctx.drawImage(logoKp, startX, 30, kpW, kpH);
-      ctx.drawImage(logoBb, startX + kpW + gap, 30, bbW, bbH);
-    } catch (e) {
-      console.warn('Cover: gagal memuat logo', e);
-    }
+    // ---------------- Pita diagonal pojok kiri ATAS ----------------
+    // pivot tepat di pojok (0,0), band tersusun dari sudut (oranye tipis)
+    // makin melebar ke arah dalam (navy)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, 420, 320);
+    ctx.clip();
+    drawRibbonBand(ctx, 0, 0, -45, [
+      { width: 46, color: ORANGE },
+      { width: 92, color: RED },
+      { width: 150, color: NAVY },
+    ], 1400);
+    ctx.restore();
 
-    // ---------------- NO. LHV ----------------
-    ctx.textAlign = 'center';
-    ctx.fillStyle = navy;
-    ctx.font = 'bold 26px Arial, sans-serif';
-    ctx.fillText('NO. LHV : ' + (noLhv || '-'), W / 2, 175);
+    // ---------------- Pita diagonal pojok kiri BAWAH ----------------
+    // cerminan vertikal dari pita atas (translate ke pojok bawah, flip sumbu Y)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, H - 420, 620, 420);
+    ctx.clip();
+    ctx.translate(0, H);
+    ctx.scale(1, -1);
+    drawRibbonBand(ctx, 0, 0, -45, [
+      { width: 46, color: ORANGE },
+      { width: 92, color: RED },
+      { width: 150, color: NAVY },
+    ], 1400);
+    ctx.restore();
 
-    // ---------------- Judul ----------------
-    ctx.font = '900 40px Arial, sans-serif';
-    ctx.fillStyle = navy;
-    const judulLines = wrapText(ctx, judulLaporan, W - 120);
-    let judulY = 235;
-    judulLines.forEach((line) => {
-      ctx.fillText(line.toUpperCase(), W / 2, judulY);
-      judulY += 46;
-    });
+    // ---------------- Diamond kecil navy (mengambang) ----------------
+    diamondPath(ctx, 150, 300, 62);
+    ctx.fillStyle = NAVY;
+    ctx.fill();
 
-    // ---------------- Subjudul (nama lembaga) ----------------
-    ctx.font = 'bold 26px Arial, sans-serif';
-    ctx.fillStyle = navy;
-    const subLines = wrapText(ctx, namaLembaga, W - 200);
-    let subY = judulY + 30;
-    subLines.forEach((line) => {
-      ctx.fillText(line, W / 2, subY);
-      subY += 36;
-    });
-
-    // ---------------- Diamond foto produk ----------------
-    const diamondCx = 130;
-    const diamondCy = subY + 260;
-    const diamondR = 300;
-    const borderW = 16;
-
-    // border gradient (diamond luar)
-    const grad = ctx.createLinearGradient(
-      diamondCx - diamondR, diamondCy - diamondR,
-      diamondCx + diamondR, diamondCy + diamondR
-    );
-    grad.addColorStop(0, hsl(base.h, base.s, Math.max(base.l - 20, 15)));
-    grad.addColorStop(0.5, hsl(base.h, base.s, base.l));
-    grad.addColorStop(1, hsl(base.h - 10, Math.max(base.s - 15, 20), Math.min(base.l + 25, 85)));
-    diamondPath(ctx, diamondCx, diamondCy, diamondR);
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = borderW;
-    ctx.stroke();
-
-    // foto produk (clip diamond dalam)
+    // ---------------- Diamond besar: foto produk (border oranye) ----------------
+    const diaCx = 175, diaCy = 640, diaR = 215, diaBorder = 17;
     if (fotoProdukBlob) {
       try {
         const img = await loadImageFromBlob(fotoProdukBlob);
         ctx.save();
-        diamondPath(ctx, diamondCx, diamondCy, diamondR - borderW);
+        diamondPath(ctx, diaCx, diaCy, diaR - diaBorder);
         ctx.clip();
-        drawCoverFit(ctx, img, diamondCx - diamondR, diamondCy - diamondR, diamondR * 2, diamondR * 2);
+        drawCoverFit(ctx, img, diaCx - diaR, diaCy - diaR, diaR * 2, diaR * 2);
         ctx.restore();
       } catch (e) {
         console.warn('Cover: gagal memuat foto produk', e);
       }
     }
+    diamondPath(ctx, diaCx, diaCy, diaR);
+    ctx.strokeStyle = ORANGE;
+    ctx.lineWidth = diaBorder;
+    ctx.stroke();
 
-    // ---------------- Teks kanan: perusahaan, bidang usaha, jenis barang ----------------
-    const rightX = 555;
+    // ---------------- Diamond merah (solid, dengan lipatan) ----------------
+    const redCx = 300, redCy = 845, redR = 95;
+    diamondPath(ctx, redCx, redCy, redR);
+    ctx.fillStyle = RED;
+    ctx.fill();
+    foldFlap(ctx, [[redCx - redR, redCy], [redCx - redR + 60, redCy + 70], [redCx - 30, redCy + 130], [redCx - 90, redCy + 60]], RED_DARK);
+
+    // ---------------- Diamond oranye kecil ----------------
+    diamondPath(ctx, 305, 1000, 40);
+    ctx.fillStyle = ORANGE;
+    ctx.fill();
+
+    // ---------------- Kolom teks kanan ----------------
+    const rightX = 430;
     const rightW = W - rightX - 60;
-    let ty = diamondCy - diamondR + 80;
+    let ty = 90;
+
+    try {
+      const [logoKp, logoBb] = await Promise.all([
+        loadImage(logoKemenperinSrc),
+        loadImage(logoBbsSrc),
+      ]);
+      const kpH = 80, kpW = (logoKp.width / logoKp.height) * kpH;
+      const bbH = 80, bbW = (logoBb.width / logoBb.height) * bbH;
+      ctx.drawImage(logoKp, rightX, ty, kpW, kpH);
+      ctx.drawImage(logoBb, rightX + kpW + 24, ty, bbW, bbH);
+      ty += kpH + 40;
+    } catch (e) {
+      console.warn('Cover: gagal memuat logo', e);
+      ty += 40;
+    }
 
     ctx.textAlign = 'left';
-    ctx.font = 'bold 32px Arial, sans-serif';
-    ctx.fillStyle = navy;
-    wrapText(ctx, namaPerusahaan || '-', rightW).forEach((line) => {
+    ctx.fillStyle = TEXT_NAVY;
+    ctx.font = 'bold 24px Arial, sans-serif';
+    ctx.fillText('NO. LHV : ' + (noLhv || '-'), rightX, ty);
+    ty += 44;
+
+    ctx.font = '900 34px Arial, sans-serif';
+    wrapText(ctx, (judulLaporan || '').toUpperCase(), rightW).forEach((line) => {
       ctx.fillText(line, rightX, ty);
       ty += 40;
     });
+    ty += 14;
 
-    ty += 40;
     ctx.font = 'bold 22px Arial, sans-serif';
-    ctx.fillText('BIDANG USAHA :', rightX, ty);
+    wrapText(ctx, namaLembaga || '', rightW).forEach((line) => {
+      ctx.fillText(line, rightX, ty);
+      ty += 30;
+    });
+    ty += 50;
+
+    ctx.font = 'bold 30px Arial, sans-serif';
+    ctx.fillStyle = TEXT_NAVY;
+    wrapText(ctx, namaPerusahaan || '-', rightW).forEach((line) => {
+      ctx.fillText(line, rightX, ty);
+      ty += 38;
+    });
     ty += 36;
-    ctx.font = '22px Arial, sans-serif';
-    ctx.fillStyle = navySoft;
-    ctx.fillText('KBLI ' + (kbliKode || '-'), rightX, ty);
+
+    ctx.font = 'bold 21px Arial, sans-serif';
+    ctx.fillStyle = TEXT_NAVY;
+    ctx.fillText('BIDANG USAHA :', rightX, ty);
     ty += 32;
+    ctx.font = '21px Arial, sans-serif';
+    ctx.fillStyle = TEXT_SOFT;
+    ctx.fillText('KBLI ' + (kbliKode || '-'), rightX, ty);
+    ty += 28;
     wrapText(ctx, kbliDeskripsi || '', rightW).forEach((line) => {
       ctx.fillText(line, rightX, ty);
-      ty += 30;
+      ty += 28;
     });
+    ty += 30;
 
-    ty += 36;
-    ctx.font = 'bold 22px Arial, sans-serif';
-    ctx.fillStyle = navy;
+    ctx.font = 'bold 21px Arial, sans-serif';
+    ctx.fillStyle = TEXT_NAVY;
     ctx.fillText('JENIS BARANG :', rightX, ty);
-    ty += 36;
-    ctx.font = '22px Arial, sans-serif';
-    ctx.fillStyle = navySoft;
+    ty += 32;
+    ctx.font = '21px Arial, sans-serif';
+    ctx.fillStyle = TEXT_SOFT;
     wrapText(ctx, jenisBarang || '-', rightW).forEach((line) => {
       ctx.fillText(line, rightX, ty);
-      ty += 30;
+      ty += 28;
     });
 
-    // ---------------- Pola gunung (bawah) ----------------
-    const peakTop = H - 430;
-    const shades = [
-      hsl(base.h, base.s, Math.max(base.l - 28, 12)),
-      hsl(base.h, base.s, Math.max(base.l - 10, 20)),
-      hsl(base.h, Math.max(base.s - 10, 20), base.l),
-      hsl(base.h - 8, Math.max(base.s - 20, 15), Math.min(base.l + 18, 80)),
-      hsl(base.h + 6, base.s, Math.max(base.l - 18, 15)),
-    ];
-    function tri(x1, yTop, x2, x3) {
-      ctx.beginPath();
-      ctx.moveTo(x1, H);
-      ctx.lineTo((x1 + x2) / 2, yTop);
-      ctx.lineTo(x2, H);
-      ctx.closePath();
-    }
-    ctx.fillStyle = shades[0];
-    tri(-50, peakTop + 60, 260, 0); ctx.fill();
-    ctx.fillStyle = shades[1];
-    tri(120, peakTop - 40, 480, 0); ctx.fill();
-    ctx.fillStyle = shades[2];
-    tri(380, peakTop + 100, 700, 0); ctx.fill();
-    ctx.fillStyle = shades[3];
-    tri(-80, peakTop + 160, 150, 0); ctx.fill();
-    ctx.fillStyle = shades[4];
-    tri(620, peakTop + 20, W + 60, 0); ctx.fill();
-
-    // ---------------- Tahun ----------------
+    // ---------------- Tahun (di atas pita bawah, teks putih) ----------------
     ctx.textAlign = 'left';
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 56px Arial, sans-serif';
-    ctx.fillText(String(tahun || new Date().getFullYear()), 70, H - 90);
+    ctx.font = '900 46px Arial, sans-serif';
+    ctx.fillText(String(tahun || new Date().getFullYear()), 50, H - 45);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob), 'image/png');
