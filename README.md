@@ -31,7 +31,15 @@ lewat `file://` karena browser memblokir `fetch()` ke file template pada mode te
 
 - **Form input** — identik dengan aplikasi React yang Bapak/Ibu buat sebelumnya (5 tab: Cover & Logo,
   Ringkasan Eksekutif, Hasil Verifikasi, Dokumen Pendukung, Lampiran).
-- **Draft otomatis** — tersimpan di `localStorage` browser selagi mengisi form (seperti sebelumnya).
+- **Cover otomatis** (`cover-generator.js`) — bisa digambar otomatis langsung di browser (Canvas API),
+  tanpa perlu desain manual: No. LHV, judul, nama perusahaan, KBLI, jenis barang, dan foto produk
+  diambil dari isian form; warna aksen & diamond foto bisa diatur. Tetap bisa upload cover sendiri
+  kalau mau desain manual (tab "1. Cover & Logo").
+- **Draft otomatis (lengkap dengan foto)** — SEMUA isian form (teks *dan* foto/dokumen yang sudah
+  diupload) tersimpan otomatis ke **IndexedDB** browser: setiap pindah tab, setiap 20 detik sekali,
+  dan saat menutup tab. Kalau browser/tab tertutup tidak sengaja atau komputer restart, tinggal buka
+  lagi halamannya — semua isian (termasuk foto) otomatis kembali. Draft baru terhapus kalau Bapak/Ibu
+  sendiri menekan tombol "🗑️ Mulai Laporan Baru (Hapus Draft)".
 - **Simpan sebagai Proyek / Buka Proyek Tersimpan** — fitur baru, menyimpan proyek (termasuk semua
   file yang diunggah) ke **IndexedDB** browser, sehingga verifikator bisa mengelola beberapa berkas
   LHV sekaligus di satu perangkat, kapan saja dilanjutkan.

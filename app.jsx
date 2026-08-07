@@ -93,6 +93,13 @@ function App() {
   const [namaPerusahaan, setNamaPerusahaan] = useState('')
   const [tanggalLhv, setTanggalLhv] = useState('') 
   const [fileCover, setFileCover] = useState(null)
+  const [coverMode, setCoverMode] = useState('auto') // 'auto' | 'upload'
+  const [coverColor, setCoverColor] = useState('#8e3d9c')
+  const [kbliDeskripsi, setKbliDeskripsi] = useState('')
+  const [namaLembagaCover, setNamaLembagaCover] = useState('LVI BSKJI - Balai Besar Standardisasi dan Pelayanan Jasa Pencegahan Pencemaran Industri')
+  const [fileFotoCover, setFileFotoCover] = useState(null)
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState('')
+  const [coverPreviewLoading, setCoverPreviewLoading] = useState(false)
   const [fileLogo, setFileLogo] = useState(null)
   const [fileFotoBarang, setFileFotoBarang] = useState(null)
   const [fileFotoProdukUtama, setFileFotoProdukUtama] = useState(null)
@@ -272,6 +279,11 @@ function App() {
   // ==========================================
   const allSetters = {
     jenisLhv: setJenisLhv,
+    coverMode: setCoverMode,
+    coverColor: setCoverColor,
+    kbliDeskripsi: setKbliDeskripsi,
+    namaLembagaCover: setNamaLembagaCover,
+    fileFotoCover: setFileFotoCover,
     namaPerusahaan: setNamaPerusahaan,
     tanggalLhv: setTanggalLhv,
     fileCover: setFileCover,
@@ -387,6 +399,7 @@ function App() {
 
   const buildFullState = () => ({
     jenisLhv, namaPerusahaan, tanggalLhv, idBerkas, permenperin,
+    coverMode, coverColor, kbliDeskripsi, namaLembagaCover, fileFotoCover,
     skalaPerusahaan, noIzin,
     namaPerusahaanIndustri, alamatPerusahaanIndustri, skalaPerusahaanIndustri,
     noIzinPerusahaanIndustri, teleponKantorIndustri, faxKantorIndustri,
@@ -531,11 +544,59 @@ function App() {
   // ==========================================
   // PROSES SUBMIT & UPLOAD MASSAL
   // ==========================================
+  // ==========================================
+  // GENERATE COVER OTOMATIS
+  // ==========================================
+  const buildCoverOptions = () => {
+    const judulLaporan = jenisLhv === 'BMP'
+      ? 'LAPORAN HASIL VERIFIKASI NILAI BMP'
+      : 'LAPORAN HASIL VERIFIKASI NILAI TKDN BARANG';
+    const tahun = (tanggalLhv && tanggalLhv.slice(0, 4)) || new Date().getFullYear();
+    return {
+      judulLaporan,
+      namaLembaga: namaLembagaCover,
+      noLhv: idBerkas,
+      namaPerusahaan,
+      kbliKode: kbli,
+      kbliDeskripsi,
+      jenisBarang,
+      tahun,
+      baseColor: coverColor,
+      fotoProdukBlob: fileFotoCover,
+      logoKemenperinSrc: logoKemenperin,
+      logoBbsSrc: logoBBS,
+    };
+  };
+
+  const handlePreviewCover = async () => {
+    setCoverPreviewLoading(true);
+    try {
+      const blob = await CoverGenerator.generateCoverImage(buildCoverOptions());
+      const url = URL.createObjectURL(blob);
+      setCoverPreviewUrl(url);
+    } catch (e) {
+      console.error(e);
+      setStatus('Gagal membuat pratinjau cover: ' + e.message);
+    } finally {
+      setCoverPreviewLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('Memproses data & gambar, mohon tunggu...');
     try {
       const state = buildFullState();
+
+      if (coverMode === 'auto') {
+        setStatus('Menggambar cover otomatis...');
+        try {
+          state.fileCover = await CoverGenerator.generateCoverImage(buildCoverOptions());
+        } catch (coverErr) {
+          console.error(coverErr);
+          throw new Error('Gagal membuat cover otomatis: ' + coverErr.message);
+        }
+      }
 
       const filename = await LHVLogic.generateAndDownload(state, (msg) => { console.log('[LHV]', msg); setStatus(msg); });
 
@@ -651,9 +712,57 @@ function App() {
             <div><label style={{ fontWeight: 'bold' }}>Tanggal LHV (Tanggal Terbit Laporan):</label><input type="date" value={tanggalLhv} onChange={(e) => setTanggalLhv(e.target.value)} required style={inputStyle}/></div>
             
             <div style={{ padding: '20px', backgroundColor: '#e3f2fd', borderRadius: '6px' }}>
-              <label style={{ fontWeight: 'bold' }}>Unggah Cover Laporan (PNG/JPG):</label><br/>
-              <input type="file" accept="image/png, image/jpeg" onChange={(e) => setFileCover(e.target.files[0])} style={{ width: '100%', marginTop: '10px' }}/>
-              <ImagePreview file={fileCover} targetWidth="Bebas (Original)" />
+              <label style={{ fontWeight: 'bold' }}>Cover Laporan:</label><br/>
+              <div style={{ display: 'flex', gap: '15px', margin: '10px 0' }}>
+                <label style={{ fontWeight: 'normal', cursor: 'pointer' }}>
+                  <input type="radio" checked={coverMode === 'auto'} onChange={() => setCoverMode('auto')} /> ✨ Buat Otomatis
+                </label>
+                <label style={{ fontWeight: 'normal', cursor: 'pointer' }}>
+                  <input type="radio" checked={coverMode === 'upload'} onChange={() => setCoverMode('upload')} /> 📤 Upload File Cover Sendiri
+                </label>
+              </div>
+
+              {coverMode === 'upload' ? (
+                <>
+                  <input type="file" accept="image/png, image/jpeg" onChange={(e) => setFileCover(e.target.files[0])} style={{ width: '100%', marginTop: '10px' }}/>
+                  <ImagePreview file={fileCover} targetWidth="Bebas (Original)" />
+                </>
+              ) : (
+                <div style={{ marginTop: '10px' }}>
+                  <p style={{ fontSize: '12px', color: '#555', marginBottom: '12px' }}>
+                    Cover akan digambar otomatis (No. LHV, nama perusahaan, bidang usaha, jenis barang diambil dari isian di form ini &amp; tab lain). Cukup pilih warna &amp; unggah foto produk.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontWeight: 'bold', fontSize: '13px' }}>Warna Aksen Cover:</label><br/>
+                      <input type="color" value={coverColor} onChange={(e) => setCoverColor(e.target.value)} style={{ width: '100%', height: '38px', marginTop: '6px', cursor: 'pointer' }}/>
+                    </div>
+                    <div>
+                      <label style={{ fontWeight: 'bold', fontSize: '13px' }}>Foto Produk untuk Cover:</label><br/>
+                      <input type="file" accept="image/png, image/jpeg" onChange={(e) => setFileFotoCover(e.target.files[0])} style={{ width: '100%', marginTop: '6px' }}/>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '12px' }}>
+                    <label style={{ fontWeight: 'bold', fontSize: '13px' }}>Deskripsi KBLI (untuk cover, opsional):</label>
+                    <input type="text" value={kbliDeskripsi} onChange={(e) => setKbliDeskripsi(e.target.value)} placeholder="Contoh: Industri Alat Kesehatan Dalam Subgolongan 2101" style={inputStyle}/>
+                  </div>
+                  <div style={{ marginTop: '12px' }}>
+                    <label style={{ fontWeight: 'bold', fontSize: '13px' }}>Nama Lembaga (subjudul cover):</label>
+                    <textarea rows="2" value={namaLembagaCover} onChange={(e) => setNamaLembagaCover(e.target.value)} style={inputStyle}></textarea>
+                  </div>
+
+                  <button type="button" onClick={handlePreviewCover} disabled={coverPreviewLoading}
+                    style={{ marginTop: '14px', padding: '10px 18px', backgroundColor: '#0d47a1', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    {coverPreviewLoading ? 'Membuat pratinjau...' : '🔍 Lihat Pratinjau Cover'}
+                  </button>
+
+                  {coverPreviewUrl && (
+                    <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                      <img src={coverPreviewUrl} alt="Pratinjau Cover" style={{ maxWidth: '320px', width: '100%', border: '1px solid #ccc', borderRadius: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}/>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ padding: '20px', backgroundColor: '#fff3e0', borderRadius: '6px' }}>
               <label style={{ fontWeight: 'bold' }}>Unggah Logo Perusahaan (Klien):</label><br/>
